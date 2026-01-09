@@ -1,26 +1,23 @@
 
-export interface GameState {
+export interface PlayerState {
   score: number;
-  level: number;
   clicks: number;
   misses: number;
   combo: number;
   maxCombo: number;
-  patience: number; // 0-100
+  patience: number;
+}
+
+export interface GameState {
+  players: PlayerState[];
+  level: number;
   isGameOver: boolean;
   gameStarted: boolean;
+  isMultiplayer: boolean;
 }
 
 export interface TrashTalkMessage {
   text: string;
   type: 'insult' | 'taunt' | 'praise' | 'glitch';
   timestamp: number;
-}
-
-export enum Difficulty {
-  EASY = 'EASY',
-  NORMAL = 'NORMAL',
-  HARD = 'HARD',
-  INSANE = 'INSANE',
-  RAGE = 'RAGE'
 }

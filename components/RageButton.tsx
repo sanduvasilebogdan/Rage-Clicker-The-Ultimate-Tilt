@@ -3,83 +3,53 @@ import React, { useState, useEffect, useCallback } from 'react';
 
 interface RageButtonProps {
   level: number;
+  color: 'red' | 'blue';
   onClick: (x: number, y: number) => void;
-  onMiss: () => void;
+  onMiss: (e: React.MouseEvent) => void;
 }
 
-const RageButton: React.FC<RageButtonProps> = ({ level, onClick, onMiss }) => {
+const RageButton: React.FC<RageButtonProps> = ({ level, color, onClick, onMiss }) => {
   const [position, setPosition] = useState({ top: '50%', left: '50%' });
   const [scale, setScale] = useState(1);
   const [opacity, setOpacity] = useState(1);
-  const [isHovering, setIsHovering] = useState(false);
 
   const moveRandomly = useCallback(() => {
-    // Generate new position within viewport bounds with safe padding
-    // Padding ensures the button doesn't go off-screen
-    const padding = 100;
+    const padding = 120;
     const newTop = Math.random() * (window.innerHeight - padding * 2) + padding;
     const newLeft = Math.random() * (window.innerWidth - padding * 2) + padding;
-    
     setPosition({ top: `${newTop}px`, left: `${newLeft}px` });
   }, []);
 
-  const handleMouseEnter = () => {
-    setIsHovering(true);
-    // Move on hover if level is high enough - adds "rage" factor
-    if (level >= 2) {
-      const probability = Math.min(0.05 + (level * 0.05), 0.7);
-      if (Math.random() < probability) {
-        moveRandomly();
-      }
-    }
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovering(false);
-  };
+  // Initialize position
+  useEffect(() => {
+    moveRandomly();
+  }, [moveRandomly]);
 
   const handleClick = (e: React.MouseEvent) => {
-    // CRITICAL: Prevent the click from bubbling up to the background "Miss" handler
     e.stopPropagation();
-    
-    // Pass coordinates for floating feedback
     onClick(e.clientX, e.clientY);
-    
-    // Always move to a new random location on hit
     moveRandomly();
-    
-    // Difficulty scaling: shrink button over time
-    const newScale = Math.max(0.4, 1 - (level * 0.025));
-    setScale(newScale);
+    // Shrink as level increases
+    setScale(Math.max(0.4, 1 - (level * 0.03)));
   };
 
-  // Periodic random movement for higher levels even without interaction
+  // Periodic jitter/movement for high levels
   useEffect(() => {
-    if (level >= 5) {
-      const intervalTime = Math.max(1000, 4000 - (level * 300));
+    if (level >= 3) {
       const interval = setInterval(() => {
-        if (!isHovering) moveRandomly();
-      }, intervalTime);
+        if (Math.random() < 0.3) moveRandomly();
+      }, 3000 - Math.min(2000, level * 200));
       return () => clearInterval(interval);
     }
-  }, [level, isHovering, moveRandomly]);
+  }, [level, moveRandomly]);
 
-  // Visual "Glitch" effect at high levels
-  useEffect(() => {
-    if (level >= 10) {
-      const interval = setInterval(() => {
-        if (Math.random() < 0.2) {
-          setOpacity(0.3);
-          setTimeout(() => setOpacity(1), 100);
-        }
-      }, 2000);
-      return () => clearInterval(interval);
-    }
-  }, [level]);
+  const colorClasses = color === 'red' 
+    ? 'border-red-500 bg-red-600 shadow-[0_0_40px_rgba(239,68,68,0.6)]' 
+    : 'border-blue-500 bg-blue-600 shadow-[0_0_40px_rgba(59,130,246,0.6)]';
 
   return (
     <div 
-      className="absolute transition-all duration-200 ease-out cursor-none"
+      className="absolute transition-all duration-300 ease-out cursor-none"
       style={{ 
         top: position.top, 
         left: position.left, 
@@ -87,26 +57,20 @@ const RageButton: React.FC<RageButtonProps> = ({ level, onClick, onMiss }) => {
         opacity: opacity,
         zIndex: 50
       }}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
     >
       <button
         onClick={handleClick}
         className={`
-          relative w-32 h-32 rounded-full border-8 border-red-500 bg-red-600
-          flex items-center justify-center text-white font-black text-xl
-          shadow-[0_0_40px_rgba(239,68,68,0.7)]
-          active:scale-90 active:bg-red-800
-          transition-all hover:rotate-6 hover:brightness-110
-          retro-font
+          relative w-28 h-28 rounded-full border-8
+          flex items-center justify-center text-white font-black text-sm
+          active:scale-90 transition-all hover:rotate-12
+          retro-font ${colorClasses}
         `}
       >
         <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent to-white/20"></div>
-        HIT ME
+        {color === 'red' ? 'P1 HIT' : 'P2 HIT'}
       </button>
-      
-      {/* Decorative ping */}
-      <div className="absolute -inset-2 rounded-full border-4 border-red-400/30 animate-ping pointer-events-none"></div>
+      <div className={`absolute -inset-2 rounded-full border-2 animate-ping pointer-events-none opacity-20 ${color === 'red' ? 'border-red-400' : 'border-blue-400'}`}></div>
     </div>
   );
 };
